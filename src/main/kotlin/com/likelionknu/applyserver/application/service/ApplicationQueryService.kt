@@ -2,49 +2,55 @@ package com.likelionknu.applyserver.application.service
 
 import com.likelionknu.applyserver.application.data.dto.response.ApplicationDetailResponse
 import com.likelionknu.applyserver.application.data.dto.response.ApplicationSummaryResponse
+import com.likelionknu.applyserver.application.data.exception.ApplicationNotFoundException
 import com.likelionknu.applyserver.application.data.exception.InvalidApplicationAccessException
 import com.likelionknu.applyserver.application.data.exception.UserNotFoundException
-import com.likelionknu.applyserver.application.data.exception.ApplicationNotFoundException
 import com.likelionknu.applyserver.application.data.repository.ApplicationRepository
 import com.likelionknu.applyserver.application.data.repository.RecruitAnswerRepository
-import com.likelionknu.applyserver.auth.data.repository.UserRepository
+import com.likelionknu.applyserver.user.data.repository.ApplyUserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class ApplicationQueryService(
     private val applicationRepository: ApplicationRepository,
-    private val userRepository: UserRepository,
+    private val applyUserRepository: ApplyUserRepository,
     private val recruitAnswerRepository: RecruitAnswerRepository
 ) {
 
     @Transactional(readOnly = true)
     fun getMyApplications(email: String): List<ApplicationSummaryResponse> {
-        val user = userRepository.findOptionalByEmail(email)
-            .orElseThrow { UserNotFoundException() }
+        val applyUser = applyUserRepository.findByEmail(email)
+            ?: throw UserNotFoundException()
 
-        val applications = applicationRepository.findAllWithRecruitByUserId(user.id!!)
+        val applyUserId = applyUser.id
+            ?: throw UserNotFoundException()
 
-        return applications.map { a ->
+        val applications = applicationRepository.findAllWithRecruitByUserId(applyUserId)
+
+        return applications.map { application ->
             ApplicationSummaryResponse(
-                applicationId = a.id!!,
-                recruitTitle = a.recruit.title,
-                status = a.status!!.name,
-                startAt = a.recruit.startAt,
-                endAt = a.recruit.endAt
+                applicationId = application.id!!,
+                recruitTitle = application.recruit.title,
+                status = application.status.name,
+                startAt = application.recruit.startAt,
+                endAt = application.recruit.endAt
             )
         }
     }
 
     @Transactional(readOnly = true)
-    fun getApplicationDetail(email: String, applicationId: Long): ApplicationDetailResponse {
-        val user = userRepository.findOptionalByEmail(email)
-            .orElseThrow { UserNotFoundException() }
+    fun getApplicationDetail(
+        email: String,
+        applicationId: Long
+    ): ApplicationDetailResponse {
+        val applyUser = applyUserRepository.findByEmail(email)
+            ?: throw UserNotFoundException()
 
         val application = applicationRepository.findById(applicationId)
             .orElseThrow { ApplicationNotFoundException() }
 
-        if (application.user.id != user.id) {
+        if (application.user.id != applyUser.id) {
             throw InvalidApplicationAccessException()
         }
 
@@ -54,15 +60,15 @@ class ApplicationQueryService(
             applicationId = application.id!!,
             recruitId = application.recruit.id!!,
             recruitTitle = application.recruit.title,
-            status = application.status!!.name,
+            status = application.status.name,
             startAt = application.recruit.startAt,
             endAt = application.recruit.endAt,
             submittedAt = application.submittedAt,
-            answers = answers.map { a ->
+            answers = answers.map { answer ->
                 ApplicationDetailResponse.ApplicationAnswerResponse(
-                    questionId = a.content.id!!,
-                    question = a.content.question,
-                    answer = a.answer
+                    questionId = answer.content.id!!,
+                    question = answer.content.question,
+                    answer = answer.answer
                 )
             }
         )

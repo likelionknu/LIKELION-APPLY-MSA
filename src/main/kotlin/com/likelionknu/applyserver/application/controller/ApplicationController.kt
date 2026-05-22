@@ -4,15 +4,15 @@ import com.likelionknu.applyserver.application.data.dto.request.ApplicationDraft
 import com.likelionknu.applyserver.application.data.dto.request.FinalSubmitRequestDto
 import com.likelionknu.applyserver.application.data.dto.response.ApplicationDetailResponse
 import com.likelionknu.applyserver.application.data.dto.response.ApplicationSummaryResponse
+import com.likelionknu.applyserver.application.data.exception.UserNotFoundException
 import com.likelionknu.applyserver.application.service.ApplicationCancelService
 import com.likelionknu.applyserver.application.service.ApplicationFinalSubmitService
 import com.likelionknu.applyserver.application.service.ApplicationQueryService
 import com.likelionknu.applyserver.application.service.ApplicationService
-import com.likelionknu.applyserver.auth.data.entity.User
-import com.likelionknu.applyserver.auth.data.repository.UserRepository
 import com.likelionknu.applyserver.common.response.GlobalResponse
 import com.likelionknu.applyserver.common.security.SecurityUtil
 import com.likelionknu.applyserver.common.security.exception.AuthenticationInfoException
+import com.likelionknu.applyserver.user.data.repository.ApplyUserRepository
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/v1/applications")
 class ApplicationController(
     private val applicationService: ApplicationService,
-    private val userRepository: UserRepository,
+    private val applyUserRepository: ApplyUserRepository,
     private val applicationFinalSubmitService: ApplicationFinalSubmitService,
     private val applicationQueryService: ApplicationQueryService,
     private val applicationCancelService: ApplicationCancelService
@@ -42,20 +42,29 @@ class ApplicationController(
         @RequestBody requests: List<ApplicationDraftSaveRequest>
     ): GlobalResponse<Long> {
         val email = SecurityUtil.getUsername()
+
         if (email.isBlank()) {
             throw AuthenticationInfoException()
         }
 
-        val user: User = userRepository.findByEmail(email)
+        val applyUser = applyUserRepository.findByEmail(email)
+            ?: throw UserNotFoundException()
 
-        val applicationId = applicationService.saveDraft(user.id!!, recruitId, requests)
+        val applicationId = applicationService.saveDraft(
+            applyUser.id!!,
+            recruitId,
+            requests
+        )
+
         return GlobalResponse.ok(applicationId)
     }
 
     @GetMapping
     @Operation(summary = "내 지원서 목록 조회")
     fun getMyApplications(): GlobalResponse<List<ApplicationSummaryResponse?>?> {
-        return GlobalResponse.ok(applicationQueryService.getMyApplications(SecurityUtil.getUsername()))
+        return GlobalResponse.ok(
+            applicationQueryService.getMyApplications(SecurityUtil.getUsername())
+        )
     }
 
     @GetMapping("/{id}")
@@ -64,26 +73,33 @@ class ApplicationController(
         @PathVariable id: Long
     ): GlobalResponse<ApplicationDetailResponse?> {
         return GlobalResponse.ok(
-            applicationQueryService.getApplicationDetail(SecurityUtil.getUsername(), id))
+            applicationQueryService.getApplicationDetail(SecurityUtil.getUsername(), id)
+        )
     }
 
     @PostMapping("/{recruitId}/cancel")
-    @Operation(summary = "지원서 회수(지원 취소) - 모든 상태 → CANCELED")
+    @Operation(summary = "지원서 회수(지원 취소) - 모든 상태 -> CANCELED")
     fun cancelApplication(
         @PathVariable recruitId: Long
     ): GlobalResponse<Void> {
-        val user: User = userRepository.findByEmail(SecurityUtil.getUsername())
-        applicationCancelService.cancel(user.id!!, recruitId)
+        val applyUser = applyUserRepository.findByEmail(SecurityUtil.getUsername())
+            ?: throw UserNotFoundException()
+
+        applicationCancelService.cancel(applyUser.id!!, recruitId)
+
         return GlobalResponse.ok()
     }
 
     @PostMapping("/{recruitId}/restore")
-    @Operation(summary = "지원서 회수 취소(상태 복원) - CANCELED → beforeCanceledStatus")
+    @Operation(summary = "지원서 회수 취소(상태 복원) - CANCELED -> beforeCanceledStatus")
     fun restoreApplication(
         @PathVariable recruitId: Long
     ): GlobalResponse<Void> {
-        val user: User = userRepository.findByEmail(SecurityUtil.getUsername())
-        applicationCancelService.restore(user.id!!, recruitId)
+        val applyUser = applyUserRepository.findByEmail(SecurityUtil.getUsername())
+            ?: throw UserNotFoundException()
+
+        applicationCancelService.restore(applyUser.id!!, recruitId)
+
         return GlobalResponse.ok()
     }
 }

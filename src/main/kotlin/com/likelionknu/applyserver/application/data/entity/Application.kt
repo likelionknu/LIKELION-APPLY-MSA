@@ -1,9 +1,9 @@
 package com.likelionknu.applyserver.application.data.entity
 
-import com.likelionknu.applyserver.auth.data.entity.User
 import com.likelionknu.applyserver.auth.data.enums.ApplicationEvaluation
 import com.likelionknu.applyserver.auth.data.enums.ApplicationStatus
 import com.likelionknu.applyserver.recruit.data.entity.Recruit
+import com.likelionknu.applyserver.user.data.entity.ApplyUser
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -20,8 +20,9 @@ import jakarta.persistence.Table
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "application")
+@Table(name = "apply_application")
 class Application(
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
@@ -32,20 +33,25 @@ class Application(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    val user: User,
+    val user: ApplyUser,
 
-    @OneToMany(mappedBy = "application", cascade = [CascadeType.ALL], orphanRemoval = true)
+    @OneToMany(
+        mappedBy = "application",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
     var answers: MutableList<RecruitAnswer?> = ArrayList(),
 
-    @Column(name = "note", length = 100)
+    @Column
     var note: String? = null,
 
     @Enumerated(EnumType.STRING)
+    @Column
     var evaluation: ApplicationEvaluation? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    var status: ApplicationStatus? = null,
+    var status: ApplicationStatus,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "before_canceled_status")
@@ -90,7 +96,7 @@ class Application(
 
         checkNotNull(this.beforeCanceledStatus) { "복구할 이전 상태 정보가 없습니다." }
 
-        this.status = this.beforeCanceledStatus
+        this.status = this.beforeCanceledStatus!!
         this.beforeCanceledStatus = null
         resetEvaluation()
     }

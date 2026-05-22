@@ -6,10 +6,12 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.hibernate.annotations.CreationTimestamp
+import org.hibernate.annotations.UpdateTimestamp
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "recruit")
+@Table(name = "apply_recruit")
 class Recruit(
 
     @Id
@@ -23,7 +25,18 @@ class Recruit(
     var startAt: LocalDateTime,
 
     @Column(name = "end_at", nullable = false)
-    var endAt: LocalDateTime
+    var endAt: LocalDateTime,
+
+    @Column(name = "deleted_at")
+    var deletedAt: LocalDateTime? = null,
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    var createdAt: LocalDateTime? = null,
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    var updatedAt: LocalDateTime? = null
 ) {
     fun update(title: String, startAt: LocalDateTime, endAt: LocalDateTime) {
         this.title = title

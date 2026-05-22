@@ -11,7 +11,7 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 
 @Entity
-@Table(name = "recruit_content")
+@Table(name = "apply_recruit_content")
 open class RecruitContent(
 
     @Id

@@ -16,13 +16,14 @@ import java.time.LocalDateTime
 
 @Service
 class MailService(
-        private val mailSender: JavaMailSender,
-        private val templateEngine: SpringTemplateEngine,
-        private val mailHistoryRepository: MailHistoryRepository
-){
+    private val mailSender: JavaMailSender,
+    private val templateEngine: SpringTemplateEngine,
+    private val mailHistoryRepository: MailHistoryRepository
+) {
     private val log = LoggerFactory.getLogger(javaClass)
+
     @Async
-    fun sendMail(mailRequestDto: MailRequestDto){
+    fun sendMail(mailRequestDto: MailRequestDto) {
         try {
             val subject = "[멋쟁이사자처럼 강남대학교] ${mailRequestDto.title}"
             val body = setContext(mailRequestDto.template, mailRequestDto.dataList)
@@ -33,17 +34,19 @@ class MailService(
                 setSubject(subject)
                 setText(body, true)
             }
+
             mailSender.send(mimeMessage)
 
             mailHistoryRepository.save(
-                    MailHistory(null,
-                            subject = subject,
-                            body = body,
-                            user = mailRequestDto.user,
-                            recipient = mailRequestDto.email,
-                            sentAt = LocalDateTime.now()
-                    )
+                MailHistory(
+                    subject = subject,
+                    body = body,
+                    recipient = mailRequestDto.email,
+                    sentAt = LocalDateTime.now(),
+                    applyUser = mailRequestDto.applyUser
+                )
             )
+
             log.info("[sendMail] 메일 전송 성공: {}, {}", mailRequestDto.email, subject)
         } catch (e: MessagingException) {
             log.error("[sendMail] 메일 전송 실패: {}", e.message)

@@ -13,7 +13,7 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 
 @Entity
-@Table(name = "recruit_answer")
+@Table(name = "apply_recruit_answer")
 class RecruitAnswer(
 
     @Id

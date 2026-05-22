@@ -1,7 +1,6 @@
 package com.likelionknu.applyserver.application.data.repository
 
 import com.likelionknu.applyserver.application.data.entity.Application
-import com.likelionknu.applyserver.auth.data.entity.User
 import com.likelionknu.applyserver.auth.data.enums.ApplicationStatus
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
@@ -30,7 +29,9 @@ interface ApplicationRepository : JpaRepository<Application, Long> {
         where a.recruit.id = :recruitId
         """
     )
-    fun existsByRecruitId(@Param("recruitId") recruitId: Long): Boolean
+    fun existsByRecruitId(
+        @Param("recruitId") recruitId: Long
+    ): Boolean
 
     fun existsByUserIdAndRecruitIdAndStatusNot(
         userId: Long,
@@ -56,7 +57,7 @@ interface ApplicationRepository : JpaRepository<Application, Long> {
         order by a.submittedAt desc
         """
     )
-    fun findAllWithRecruitByUserId(@Param("userId") userId: Long): List<Application>
-
-    fun findAllByUser(user: User): List<Application>
+    fun findAllWithRecruitByUserId(
+        @Param("userId") userId: Long
+    ): List<Application>
 }

@@ -1,11 +1,20 @@
 package com.likelionknu.applyserver.application.data.entity
 
-import com.likelionknu.applyserver.auth.data.entity.User
-import jakarta.persistence.*
+import com.likelionknu.applyserver.user.data.entity.ApplyUser
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.FetchType
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.Lob
+import jakarta.persistence.ManyToOne
+import jakarta.persistence.Table
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "mail_history")
+@Table(name = "apply_mail_history")
 class MailHistory(
 
     @Id
@@ -19,13 +28,13 @@ class MailHistory(
     @Column(nullable = false, columnDefinition = "LONGTEXT")
     val body: String,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    var user: User? = null,
-
     @Column(nullable = false)
     val recipient: String,
 
     @Column(name = "sent_at", nullable = false)
-    val sentAt: LocalDateTime
+    val sentAt: LocalDateTime,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "apply_user_id")
+    var applyUser: ApplyUser? = null
 )

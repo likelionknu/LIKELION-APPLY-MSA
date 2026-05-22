@@ -25,14 +25,26 @@ class ApplicationCancelService(
      * @param recruitId 공고 고유 ID
      */
     @Transactional
-    fun cancel(userId: Long, recruitId: Long) {
-        val application: Application = applicationRepository.findByUserIdAndRecruitId(userId, recruitId)
-            ?: throw IllegalStateException("회수할 지원서가 없습니다.")
+    fun cancel(
+        userId: Long,
+        recruitId: Long
+    ) {
+        val application: Application = applicationRepository.findByUserIdAndRecruitId(
+            userId,
+            recruitId
+        ) ?: throw IllegalStateException("회수할 지원서가 없습니다.")
 
-        if (application.status == ApplicationStatus.CANCELED) return
+        if (application.status == ApplicationStatus.CANCELED) {
+            return
+        }
 
         application.changeStatus(ApplicationStatus.CANCELED)
-        log.info("[cancel] 지원서 회수 요청: {} {}", application.recruit.title, application.user.email)
+
+        log.info(
+            "[cancel] 지원서 회수 요청: {} {}",
+            application.recruit.title,
+            application.user.email
+        )
     }
 
     /**
@@ -44,14 +56,23 @@ class ApplicationCancelService(
      * @param recruitId 공고 고유 ID
      */
     @Transactional
-    fun restore(userId: Long, recruitId: Long) {
-        val application: Application = applicationRepository.findByUserIdAndRecruitIdAndStatus(userId, recruitId, ApplicationStatus.CANCELED)
-            ?: throw IllegalStateException("복구 가능한 지원서가 없습니다.")
+    fun restore(
+        userId: Long,
+        recruitId: Long
+    ) {
+        val application: Application = applicationRepository.findByUserIdAndRecruitIdAndStatus(
+            userId,
+            recruitId,
+            ApplicationStatus.CANCELED
+        ) ?: throw IllegalStateException("복구 가능한 지원서가 없습니다.")
 
         val now = LocalDateTime.now()
-        val isOpen = !now.isBefore(application.recruit.startAt) && !now.isAfter(application.recruit.endAt)
+        val isOpen = !now.isBefore(application.recruit.startAt) &&
+                !now.isAfter(application.recruit.endAt)
 
-        if (!isOpen) throw GlobalException(ErrorCode.FORBIDDEN)
+        if (!isOpen) {
+            throw GlobalException(ErrorCode.FORBIDDEN)
+        }
 
         application.restoreFromCanceled()
     }

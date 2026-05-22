@@ -7,11 +7,11 @@ import com.likelionknu.applyserver.application.data.exception.ApplicationStateEx
 import com.likelionknu.applyserver.application.data.exception.UserNotFoundException
 import com.likelionknu.applyserver.application.data.repository.ApplicationRepository
 import com.likelionknu.applyserver.auth.data.enums.ApplicationStatus
-import com.likelionknu.applyserver.auth.data.repository.UserRepository
 import com.likelionknu.applyserver.common.response.ErrorCode
 import com.likelionknu.applyserver.common.response.GlobalException
 import com.likelionknu.applyserver.discord.service.DiscordNotificationService
 import com.likelionknu.applyserver.recruit.data.repository.RecruitRepository
+import com.likelionknu.applyserver.user.data.repository.ApplyUserRepository
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -21,7 +21,7 @@ class ApplicationService(
     private val applicationRepository: ApplicationRepository,
     private val applicationAnswerService: ApplicationAnswerService,
     private val discordNotificationService: DiscordNotificationService,
-    private val userRepository: UserRepository,
+    private val applyUserRepository: ApplyUserRepository,
     private val recruitRepository: RecruitRepository
 ) {
     /**
@@ -47,13 +47,15 @@ class ApplicationService(
         val now = LocalDateTime.now()
         val isOpen = !now.isBefore(recruit.startAt) && !now.isAfter(recruit.endAt)
 
-        if (!isOpen) throw GlobalException(ErrorCode.FORBIDDEN)
+        if (!isOpen) {
+            throw GlobalException(ErrorCode.FORBIDDEN)
+        }
 
         val application = applicationRepository
             .findByUserIdAndRecruitId(userId, recruitId)
             ?: applicationRepository.save(
                 Application(
-                    user = userRepository.findById(userId)
+                    user = applyUserRepository.findById(userId)
                         .orElseThrow { UserNotFoundException() },
                     recruit = recruit,
                     status = ApplicationStatus.DRAFT,
