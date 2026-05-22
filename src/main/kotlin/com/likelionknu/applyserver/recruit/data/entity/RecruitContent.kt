@@ -29,5 +29,11 @@ open class RecruitContent(
     open var priority: Int = 0,
 
     @Column(nullable = false)
-    open var required: Boolean = false
+    open var required: Boolean = false,
+
+    @Column(name = "min_length")
+    open var minLength: Int? = null,
+
+    @Column(name = "max_length")
+    open var maxLength: Int? = null
 )

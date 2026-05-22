@@ -17,10 +17,19 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "apply_application")
+@Table(
+    name = "apply_application",
+    uniqueConstraints = [
+        UniqueConstraint(
+            name = "uk_application_per_user",
+            columnNames = ["recruit_id", "user_id"]
+        )
+    ]
+)
 class Application(
 
     @Id
@@ -46,6 +55,14 @@ class Application(
     var note: String? = null,
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "document_evaluation")
+    var documentEvaluation: ApplicationEvaluation? = null,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "interview_evaluation")
+    var interviewEvaluation: ApplicationEvaluation? = null,
+
+    @Enumerated(EnumType.STRING)
     @Column
     var evaluation: ApplicationEvaluation? = null,
 
@@ -62,6 +79,14 @@ class Application(
 ) {
     fun updateNote(memo: String?) {
         this.note = memo
+    }
+
+    fun updateDocumentEvaluation(evaluation: ApplicationEvaluation?) {
+        this.documentEvaluation = evaluation
+    }
+
+    fun updateInterviewEvaluation(evaluation: ApplicationEvaluation?) {
+        this.interviewEvaluation = evaluation
     }
 
     fun updateEvaluation(evaluation: ApplicationEvaluation?) {

@@ -21,11 +21,20 @@ class Recruit(
     @Column(nullable = false)
     var title: String,
 
+    @Column(nullable = false)
+    var generation: Int,
+
     @Column(name = "start_at", nullable = false)
     var startAt: LocalDateTime,
 
     @Column(name = "end_at", nullable = false)
     var endAt: LocalDateTime,
+
+    @Column(name = "document_result_at", nullable = false)
+    var documentResultAt: LocalDateTime,
+
+    @Column(name = "final_result_at", nullable = false)
+    var finalResultAt: LocalDateTime,
 
     @Column(name = "deleted_at")
     var deletedAt: LocalDateTime? = null,
@@ -38,9 +47,19 @@ class Recruit(
     @Column(name = "updated_at", nullable = false)
     var updatedAt: LocalDateTime? = null
 ) {
-    fun update(title: String, startAt: LocalDateTime, endAt: LocalDateTime) {
+    fun update(
+        title: String,
+        generation: Int,
+        startAt: LocalDateTime,
+        endAt: LocalDateTime,
+        documentResultAt: LocalDateTime,
+        finalResultAt: LocalDateTime
+    ) {
         this.title = title
+        this.generation = generation
         this.startAt = startAt
         this.endAt = endAt
+        this.documentResultAt = documentResultAt
+        this.finalResultAt = finalResultAt
     }
 }
