@@ -1,7 +1,6 @@
 package com.likelionknu.applyserver.common.security
 
 import com.likelionknu.applyserver.auth.data.enums.Role
-import com.likelionknu.applyserver.auth.data.repository.UserRepository
 import com.likelionknu.applyserver.common.redis.RedisService
 import com.likelionknu.applyserver.common.response.ErrorCode
 import com.likelionknu.applyserver.common.security.exception.JwtAuthenticationException
@@ -29,7 +28,6 @@ import java.util.Date
 class JwtTokenProvider(
     @Value("\${jwt.secret}") secretKey: String,
     private val redisService: RedisService,
-    private val userRepository: UserRepository,
     @Value("\${jwt.access-token.expire-time}") private val accessTokenExpireTime: Long,
     @Value("\${jwt.refresh-token.expire-time}") private val refreshTokenExpireTime: Long
 ) {
@@ -40,7 +38,11 @@ class JwtTokenProvider(
         return parseClaims(token).subject
     }
 
-    private fun createToken(email: String, authorities: String?, expireDate: Date): String {
+    private fun createToken(
+        email: String,
+        authorities: String?,
+        expireDate: Date
+    ): String {
         log.info("[createToken] 새 JWT 발급 됨: {}", email)
 
         val builder = Jwts.builder()
@@ -71,6 +73,7 @@ class JwtTokenProvider(
             authorities,
             Date(now + accessTokenExpireTime)
         )
+
         val refreshToken = createToken(
             username,
             null,
@@ -78,6 +81,7 @@ class JwtTokenProvider(
         )
 
         log.info("[generateToken] 발급된 Refresh Token이 Redis에 저장 됨")
+
         redisService.setValues(
             username,
             refreshToken,
@@ -96,9 +100,7 @@ class JwtTokenProvider(
 
         val authorities: Collection<GrantedAuthority> =
             if (authClaim == null || authClaim.toString().isEmpty()) {
-                val user = userRepository.findOptionalByEmail(claims.subject).orElse(null)
-                val role = (user?.role ?: Role.USER).toString()
-                listOf(SimpleGrantedAuthority(role))
+                listOf(SimpleGrantedAuthority(Role.USER.toString()))
             } else {
                 authClaim.toString()
                     .split(",")
@@ -111,7 +113,11 @@ class JwtTokenProvider(
             authorities
         )
 
-        return UsernamePasswordAuthenticationToken(principal, "", authorities)
+        return UsernamePasswordAuthenticationToken(
+            principal,
+            "",
+            authorities
+        )
     }
 
     private fun parseClaims(accessToken: String): Claims {

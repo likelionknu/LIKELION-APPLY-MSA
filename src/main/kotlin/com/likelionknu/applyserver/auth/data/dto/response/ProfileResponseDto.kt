@@ -7,7 +7,7 @@ data class ProfileResponseDto(
     val name: String,
 
     @JsonProperty("profile_url")
-    val profileUrl: String,
+    val profileUrl: String?,
 
     val depart: String?,
 
