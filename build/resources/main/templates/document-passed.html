@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<body style="margin: 0; padding: 0; background-color: #f4f4f4;">
+<div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+
+    <div style="background-color: #2d3436; padding: 50px 20px; text-align: center;">
+        <img src="https://raw.githubusercontent.com/likelionknu/apply-page-assets/refs/heads/main/likelion-knu-logo.png" alt="likelion-knu-logo" style="width: 220px; height: auto; display: inline-block; vertical-align: middle;">
+    </div>
+
+    <div style="padding: 40px 35px; color: #2d3436;">
+        <p style="font-size: 16px; line-height: 1.7; margin-bottom: 10px;">
+            안녕하세요. <strong th:text="${userName}">이름</strong>님!
+        </p>
+        <p style="font-size: 16px; margin-bottom: 25px;">멋쟁이사자처럼 강남대학교 운영진입니다.</p>
+
+        <p style="font-size: 15px; color: #4b4b4b; line-height: 1.7; margin-bottom: 20px;">
+            <span th:text="${part}">공고 명</span>에 지원해주셔서 감사드려요.
+        </p>
+
+        <h2 style="font-size: 20px; color: #FF8A00; margin-bottom: 20px;">서류전형 합격을 진심으로 축하드립니다!</h2>
+
+        <p style="font-size: 15px; color: #4b4b4b; line-height: 1.7;">
+            <span th:text="${userName}">이름</span>님께서는 면접 대상자로 선정되었어요.<br>
+            아래 면접 안내 사항을 전달드리니, 반드시 확인하여 면접에 참여 부탁드립니다!
+        </p>
+
+        <div style="margin: 30px 0; padding: 25px; background-color: #fdfaf7; border-radius: 12px; border: 1px solid #ffe8cc;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+                <tr>
+                    <td style="width: 100px; padding: 8px 0; color: #888; font-weight: bold;">면접 일시</td>
+                    <td style="padding: 8px 0; color: #333; font-weight: bold;">SMS 개별 안내</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #888; font-weight: bold;">면접 장소</td>
+                    <td style="padding: 8px 0; color: #333;" th:text="${interviewLocation}">ㅇㅇㅇㅇ</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #888; font-weight: bold;">예상 소요시간</td>
+                    <td style="padding: 8px 0; color: #333;"><span th:text="${interviewTime}">15</span>분 소요 예정</td>
+                </tr>
+            </table>
+        </div>
+
+        <p style="font-size: 14px; color: #7f8c8d; line-height: 1.6; margin-bottom: 40px;">
+            기타 문의 사항은 아래 연락처로 남겨주세요!<br>
+            <strong>010-3036-9968</strong>
+        </p>
+
+        <div style="padding-top: 25px; border-top: 1px solid #eee; text-align: center;">
+            <p style="font-size: 15px; font-weight: bold; color: #2d3436; margin: 0;">멋쟁이사자처럼 강남대학교 운영진 드림</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
