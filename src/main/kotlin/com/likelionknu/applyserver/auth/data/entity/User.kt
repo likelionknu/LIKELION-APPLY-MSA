@@ -1,15 +1,24 @@
 package com.likelionknu.applyserver.auth.data.entity
 
-import com.likelionknu.applyserver.application.data.entity.Application
 import com.likelionknu.applyserver.auth.data.enums.Role
-import jakarta.persistence.*
+import jakarta.persistence.CascadeType
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
+import jakarta.persistence.FetchType
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.OneToOne
+import jakarta.persistence.Table
 import org.hibernate.annotations.CreationTimestamp
 import org.hibernate.annotations.UpdateTimestamp
 import java.time.LocalDateTime
 
 @Entity
 @Table(name = "user")
-class User (
+class User(
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         val id: Long? = null,
@@ -27,17 +36,13 @@ class User (
         @Column(nullable = false)
         var role: Role = Role.USER,
 
-        @OneToOne(mappedBy = "user",
+        @OneToOne(
+                mappedBy = "user",
                 cascade = [CascadeType.ALL],
                 orphanRemoval = true,
-                fetch = FetchType.LAZY)
-        var profile: Profile?= null,
-
-        // 사용자 삭제 시 함께 삭제되도록 하기 위한 연관관계
-        @OneToMany(mappedBy = "user",
-                cascade = [CascadeType.ALL],
-                orphanRemoval = true)
-        val applications: MutableList<Application> = mutableListOf(),
+                fetch = FetchType.LAZY
+        )
+        var profile: Profile? = null,
 
         @UpdateTimestamp
         @Column(name = "modified_at", nullable = false)
