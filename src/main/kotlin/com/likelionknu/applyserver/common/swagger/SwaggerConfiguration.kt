@@ -22,7 +22,7 @@ class SwaggerConfiguration {
             .version("v1.0.0")
 
         val localServer = Server()
-            .url("http://localhost:8080")
+            .url("http://localhost:8082")
             .description("Local Server")
 
         val prodServer = Server()

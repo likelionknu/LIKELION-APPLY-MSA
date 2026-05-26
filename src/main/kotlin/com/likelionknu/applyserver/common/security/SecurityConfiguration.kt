@@ -46,6 +46,7 @@ class SecurityConfiguration(
             authorize
                 .requestMatchers(
                     "/api/v1/auth/**",
+                    "/apply/v1/users/me/profile",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/swagger-resources/**",

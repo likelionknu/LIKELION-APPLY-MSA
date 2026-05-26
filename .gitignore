@@ -48,3 +48,5 @@ application.yml
 # local secrets
 secret.yml
 *.secret.yml
+
+application-local.yml
