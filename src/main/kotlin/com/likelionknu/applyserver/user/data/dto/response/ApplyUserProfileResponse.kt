@@ -34,14 +34,14 @@ data class ApplyUserProfileResponse(
                 email = authUserResponse.email,
                 name = authUserResponse.name,
                 profileUrl = authUserResponse.profileUrl,
-                role = authUserResponse.role,
+                role = authUserResponse.userRole,
                 depart = authUserResponse.depart,
                 grade = authUserResponse.grade,
                 phone = authUserResponse.phone,
                 studentId = authUserResponse.studentId,
                 status = authUserResponse.academicStatus,
-                part = authUserResponse.part,
-                course = authUserResponse.course,
+                part = authUserResponse.currentPart,
+                course = authUserResponse.currentCourse,
                 joinedAt = authUserResponse.joinedAt
             )
         }

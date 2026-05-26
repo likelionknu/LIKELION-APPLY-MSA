@@ -12,7 +12,9 @@ class ApplyUserService(
     private val log = LoggerFactory.getLogger(ApplyUserService::class.java)
 
     fun getMyProfile(email: String): ApplyUserProfileResponse {
-        val authUserResponse = authUserClient.getUser(email)
+        val authResponse = authUserClient.getUser(email)
+        val authUserResponse = authResponse.data
+            ?: throw IllegalStateException("AuthService 사용자 정보 응답이 비어 있습니다.")
 
         log.info("[getMyProfile] 사용자 프로필 조회: {}", email)
 
