@@ -24,7 +24,6 @@ bin/
 *.ipr
 out/
 !**/src/main/**/out/
-!**/src/test/**/out/
 
 ### NetBeans ###
 /nbproject/private/
@@ -44,9 +43,9 @@ out/
 
 # local config
 application.yml
+application-local.yml
+application-prod.yml
 
 # local secrets
 secret.yml
 *.secret.yml
-
-application-local.yml
