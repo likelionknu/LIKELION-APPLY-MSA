@@ -1,12 +1,14 @@
-FROM eclipse-temurin:21-jdk-alpine
+# ---------- build ----------
+FROM eclipse-temurin:21-jdk-alpine AS builder
+WORKDIR /workspace
+COPY . .
+RUN chmod +x gradlew && ./gradlew bootJar --no-daemon -x test
 
-EXPOSE 443
-
-ARG JAR_FILE=build/libs/*.jar
-COPY ${JAR_FILE} app.jar
-
-COPY config/application.yml /application.yml
-COPY ./certs/keystore.p12 /etc/ssl/private/keystore.p12
-RUN chmod 644 /etc/ssl/private/keystore.p12
-
-ENTRYPOINT ["java", "-jar", "/app.jar", "--spring.config.location=file:/application.yml"]
+# ---------- runtime ----------
+FROM eclipse-temurin:21-jre-alpine
+RUN addgroup -S app && adduser -S app -G app -u 1000
+WORKDIR /app
+COPY --from=builder --chown=1000:1000 /workspace/build/libs/*.jar app.jar
+USER 1000:1000
+EXPOSE 8082
+ENTRYPOINT ["java", "-jar", "app.jar"]
