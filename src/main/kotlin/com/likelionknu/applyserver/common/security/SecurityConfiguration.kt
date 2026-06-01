@@ -47,6 +47,8 @@ class SecurityConfiguration(
                 .requestMatchers(
                     "/api/v1/auth/**",
                     "/apply/v1/users/me/profile",
+                    // 임시
+                    "/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/swagger-resources/**",
