@@ -7,21 +7,20 @@ import com.likelionknu.applyserver.application.data.exception.InvalidApplication
 import com.likelionknu.applyserver.application.data.exception.UserNotFoundException
 import com.likelionknu.applyserver.application.data.repository.ApplicationRepository
 import com.likelionknu.applyserver.application.data.repository.RecruitAnswerRepository
-import com.likelionknu.applyserver.user.data.repository.ApplyUserRepository
+import com.likelionknu.applyserver.user.service.ApplyUserSyncService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class ApplicationQueryService(
     private val applicationRepository: ApplicationRepository,
-    private val applyUserRepository: ApplyUserRepository,
-    private val recruitAnswerRepository: RecruitAnswerRepository
+    private val recruitAnswerRepository: RecruitAnswerRepository,
+    private val applyUserSyncService: ApplyUserSyncService
 ) {
 
     @Transactional(readOnly = true)
     fun getMyApplications(email: String): List<ApplicationSummaryResponse> {
-        val applyUser = applyUserRepository.findByEmail(email)
-            ?: throw UserNotFoundException()
+        val applyUser = applyUserSyncService.getOrSync(email)
 
         val applyUserId = applyUser.id
             ?: throw UserNotFoundException()
@@ -44,8 +43,7 @@ class ApplicationQueryService(
         email: String,
         applicationId: Long
     ): ApplicationDetailResponse {
-        val applyUser = applyUserRepository.findByEmail(email)
-            ?: throw UserNotFoundException()
+        val applyUser = applyUserSyncService.getOrSync(email)
 
         val application = applicationRepository.findById(applicationId)
             .orElseThrow { ApplicationNotFoundException() }

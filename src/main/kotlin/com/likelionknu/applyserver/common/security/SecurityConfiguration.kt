@@ -19,10 +19,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 @EnableWebSecurity
 @Configuration
 class SecurityConfiguration(
-    private val tokenProvider: JwtTokenProvider,
     private val authenticationEntryPoint: AuthenticationEntryPoint,
     private val accessDeniedHandler: AccessDeniedHandler
 ) {
+
     @Bean
     fun filterChain(httpSecurity: HttpSecurity): SecurityFilterChain {
         httpSecurity
@@ -45,21 +45,18 @@ class SecurityConfiguration(
         httpSecurity.authorizeHttpRequests { authorize ->
             authorize
                 .requestMatchers(
-                    "/api/v1/auth/**",
-                    "/apply/v1/users/me/profile",
-                    // 임시
-                    "/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/swagger-resources/**",
                     "/webjars/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
         }
 
         httpSecurity.addFilterBefore(
-            JwtAuthenticationFilter(tokenProvider),
+            HeaderAuthenticationFilter(),
             UsernamePasswordAuthenticationFilter::class.java
         )
 
@@ -77,13 +74,21 @@ class SecurityConfiguration(
             "https://apply-page-client.vercel.app",
             "https://apply-page-admin.vercel.app"
         )
-        configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+        configuration.allowedMethods = listOf(
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "OPTIONS",
+            "PATCH"
+        )
         configuration.allowedHeaders = listOf("*")
         configuration.allowCredentials = true
         configuration.maxAge = 3600L
 
         val source = UrlBasedCorsConfigurationSource()
         source.registerCorsConfiguration("/**", configuration)
+
         return source
     }
 

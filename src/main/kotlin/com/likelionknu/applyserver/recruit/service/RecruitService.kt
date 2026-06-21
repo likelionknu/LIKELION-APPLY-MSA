@@ -15,7 +15,7 @@ import com.likelionknu.applyserver.recruit.data.entity.Recruit
 import com.likelionknu.applyserver.recruit.data.entity.RecruitContent
 import com.likelionknu.applyserver.recruit.data.repository.RecruitContentRepository
 import com.likelionknu.applyserver.recruit.data.repository.RecruitRepository
-import com.likelionknu.applyserver.user.data.repository.ApplyUserRepository
+import com.likelionknu.applyserver.user.service.ApplyUserSyncService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -25,9 +25,9 @@ import java.time.LocalDateTime
 class RecruitService(
     private val recruitRepository: RecruitRepository,
     private val recruitContentRepository: RecruitContentRepository,
-    private val applyUserRepository: ApplyUserRepository,
     private val applicationRepository: ApplicationRepository,
-    private val recruitAnswerRepository: RecruitAnswerRepository
+    private val recruitAnswerRepository: RecruitAnswerRepository,
+    private val applyUserSyncService: ApplyUserSyncService
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -36,12 +36,11 @@ class RecruitService(
         return recruitRepository.findAll().map(RecruitListResponse::from)
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     fun checkAvailability(recruitId: Long): RecruitAvailabilityResponse {
         val email = SecurityUtil.getUsername()
 
-        val applyUser = applyUserRepository.findByEmail(email)
-            ?: throw UserNotFoundException()
+        val applyUser = applyUserSyncService.getOrSync(email)
 
         val recruit: Recruit = recruitRepository.findById(recruitId)
             .orElseThrow { GlobalException(ErrorCode.NOT_FOUND) }
@@ -85,7 +84,7 @@ class RecruitService(
         )
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     fun getRecruitQuestions(recruitId: Long): RecruitDetailResponse {
         val recruit = recruitRepository.findById(recruitId)
             .orElseThrow { GlobalException(ErrorCode.NOT_FOUND) }
@@ -101,9 +100,7 @@ class RecruitService(
             recruitContentRepository.findByRecruitIdOrderByPriorityAsc(recruitId)
 
         val email = SecurityUtil.getUsername()
-
-        val applyUser = applyUserRepository.findByEmail(email)
-            ?: throw UserNotFoundException()
+        val applyUser = applyUserSyncService.getOrSync(email)
 
         log.info(
             "[getRecruitQuestions] 공고 질문 조회: 공고 ID: {} 요청: {}",
