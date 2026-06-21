@@ -11,6 +11,7 @@ import com.likelionknu.applyserver.recruit.data.dto.response.RecruitAvailability
 import com.likelionknu.applyserver.recruit.data.dto.response.RecruitDetailResponse
 import com.likelionknu.applyserver.recruit.data.dto.response.RecruitListResponse
 import com.likelionknu.applyserver.recruit.data.dto.response.RecruitQuestionResponse
+import com.likelionknu.applyserver.recruit.data.dto.response.RecruitResponse
 import com.likelionknu.applyserver.recruit.data.entity.Recruit
 import com.likelionknu.applyserver.recruit.data.entity.RecruitContent
 import com.likelionknu.applyserver.recruit.data.repository.RecruitContentRepository
@@ -34,6 +35,18 @@ class RecruitService(
     @Transactional(readOnly = true)
     fun getRecruits(): List<RecruitListResponse> {
         return recruitRepository.findAll().map(RecruitListResponse::from)
+    }
+
+    @Transactional(readOnly = true)
+    fun getRecruit(recruitId: Long): RecruitResponse {
+        val recruit = recruitRepository.findById(recruitId)
+            .orElseThrow { GlobalException(ErrorCode.NOT_FOUND) }
+
+        if (recruit.deletedAt != null) {
+            throw GlobalException(ErrorCode.NOT_FOUND)
+        }
+
+        return RecruitResponse.from(recruit)
     }
 
     @Transactional

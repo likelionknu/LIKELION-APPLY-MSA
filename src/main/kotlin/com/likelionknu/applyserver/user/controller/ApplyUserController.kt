@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/apply/v1/users")
+@RequestMapping("/api/v1/users")
 class ApplyUserController(
     private val applyUserService: ApplyUserService
 ) {
