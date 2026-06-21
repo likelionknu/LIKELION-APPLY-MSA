@@ -3,8 +3,6 @@ package com.likelionknu.applyserver.application.service
 import com.likelionknu.applyserver.application.data.dto.request.FinalSubmitRequestDto
 import com.likelionknu.applyserver.application.data.entity.Application
 import com.likelionknu.applyserver.application.data.entity.RecruitAnswer
-import com.likelionknu.applyserver.application.data.exception.EmptyAnswerException
-import com.likelionknu.applyserver.application.data.exception.InvalidApplicationQuestionException
 import com.likelionknu.applyserver.application.data.exception.ProfileIncompleteException
 import com.likelionknu.applyserver.application.data.exception.RecruitContentNotFoundException
 import com.likelionknu.applyserver.application.data.exception.RecruitIsNotOpenedException
@@ -29,16 +27,13 @@ class ApplicationFinalSubmitService(
     private val recruitContentRepository: RecruitContentRepository,
     private val recruitRepository: RecruitRepository,
     private val discordNotificationService: DiscordNotificationService,
-    private val applyUserSyncService: ApplyUserSyncService
+    private val applyUserSyncService: ApplyUserSyncService,
+    private val applicationAnswerValidator: ApplicationAnswerValidator
 ) {
     fun finalSubmit(
         email: String,
         request: FinalSubmitRequestDto
     ) {
-        if (request.items.isEmpty()) {
-            throw EmptyAnswerException()
-        }
-
         val applyUser = applyUserSyncService.getOrSync(email)
 
         val applyUserId = applyUser.id
@@ -68,6 +63,8 @@ class ApplicationFinalSubmitService(
             throw RecruitIsNotOpenedException()
         }
 
+        applicationAnswerValidator.validateFinalSubmit(recruitId, request.items)
+
         val existingApplication = applicationRepository.findByUserIdAndRecruitId(
             applyUserId,
             request.recruitId
@@ -91,29 +88,16 @@ class ApplicationFinalSubmitService(
         val applicationId = application.id
             ?: throw IllegalStateException("지원서 ID가 없습니다.")
 
-        val requiredContents = recruitContentRepository.findAllByRecruit_IdAndRequiredTrue(recruitId)
-        val submittedQuestionIds = request.items.map { it.questionId }.toSet()
-
-        requiredContents.forEach { required ->
-            if (required.id !in submittedQuestionIds) {
-                throw EmptyAnswerException()
-            }
-        }
-
         recruitAnswerRepository.deleteByApplication_Id(applicationId)
 
         val answers = request.items.map { item ->
             val content = recruitContentRepository.findById(item.questionId)
                 .orElseThrow { RecruitContentNotFoundException() }
 
-            if (request.recruitId != content.recruit?.id) {
-                throw InvalidApplicationQuestionException()
-            }
-
             RecruitAnswer(
                 application = application,
                 content = content,
-                answer = item.answer
+                answer = item.answer.trim()
             )
         }
 

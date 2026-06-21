@@ -20,21 +20,11 @@ import java.time.LocalDateTime
 class ApplicationService(
     private val applicationRepository: ApplicationRepository,
     private val applicationAnswerService: ApplicationAnswerService,
+    private val applicationAnswerValidator: ApplicationAnswerValidator,
     private val discordNotificationService: DiscordNotificationService,
     private val applyUserRepository: ApplyUserRepository,
     private val recruitRepository: RecruitRepository
 ) {
-    /**
-     * 지원서 임시 저장
-     *
-     * 모집 공고가 모집 상태일 때에만 임시 저장 가능
-     * 기존 지원서가 없다면 DRAFT 상태로 지원서를 생성함
-     *
-     * @param userId 사용자 고유 ID
-     * @param recruitId 모집 공고 고유 ID
-     * @param requests 임시 저장할 답변 목록
-     * @return 임시 저장한 지원서 ID
-     */
     @Transactional
     fun saveDraft(
         userId: Long,
@@ -50,6 +40,8 @@ class ApplicationService(
         if (!isOpen) {
             throw GlobalException(ErrorCode.FORBIDDEN)
         }
+
+        applicationAnswerValidator.validateDraft(recruitId, requests)
 
         val application = applicationRepository
             .findByUserIdAndRecruitId(userId, recruitId)
