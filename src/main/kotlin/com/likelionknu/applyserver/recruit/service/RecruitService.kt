@@ -34,7 +34,8 @@ class RecruitService(
 
     @Transactional(readOnly = true)
     fun getRecruits(): List<RecruitListResponse> {
-        return recruitRepository.findAll().map(RecruitListResponse::from)
+        return recruitRepository.findAllByDeletedAtIsNull()
+            .map(RecruitListResponse::from)
     }
 
     @Transactional(readOnly = true)
@@ -42,9 +43,7 @@ class RecruitService(
         val recruit = recruitRepository.findById(recruitId)
             .orElseThrow { GlobalException(ErrorCode.NOT_FOUND) }
 
-        if (recruit.deletedAt != null) {
-            throw GlobalException(ErrorCode.NOT_FOUND)
-        }
+        validateRecruitNotDeleted(recruit)
 
         return RecruitResponse.from(recruit)
     }
@@ -52,11 +51,12 @@ class RecruitService(
     @Transactional
     fun checkAvailability(recruitId: Long): RecruitAvailabilityResponse {
         val email = SecurityUtil.getUsername()
-
         val applyUser = applyUserSyncService.getOrSync(email)
 
         val recruit: Recruit = recruitRepository.findById(recruitId)
             .orElseThrow { GlobalException(ErrorCode.NOT_FOUND) }
+
+        validateRecruitNotDeleted(recruit)
 
         log.info(
             "[checkAvailability] 모집 공고 지원 가능 여부 조회: {} {}",
@@ -101,6 +101,8 @@ class RecruitService(
     fun getRecruitQuestions(recruitId: Long): RecruitDetailResponse {
         val recruit = recruitRepository.findById(recruitId)
             .orElseThrow { GlobalException(ErrorCode.NOT_FOUND) }
+
+        validateRecruitNotDeleted(recruit)
 
         val now = LocalDateTime.now()
         val isOpen = !now.isBefore(recruit.startAt) && !now.isAfter(recruit.endAt)
@@ -148,5 +150,11 @@ class RecruitService(
             endAt = recruit.endAt.toString(),
             questions = questionList
         )
+    }
+
+    private fun validateRecruitNotDeleted(recruit: Recruit) {
+        if (recruit.deletedAt != null) {
+            throw GlobalException(ErrorCode.NOT_FOUND)
+        }
     }
 }
