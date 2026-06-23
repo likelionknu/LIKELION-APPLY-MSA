@@ -8,6 +8,10 @@ import org.springframework.data.repository.query.Param
 
 interface RecruitContentRepository : JpaRepository<RecruitContent, Long> {
 
+    fun countByRecruitId(
+        recruitId: Long
+    ): Long
+
     fun findByRecruitIdOrderByPriorityAsc(recruitId: Long): List<RecruitContent>
 
     fun findAllByRecruit_IdAndRequiredTrue(recruitId: Long?): List<RecruitContent>

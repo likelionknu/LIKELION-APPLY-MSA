@@ -1,6 +1,7 @@
 package com.likelionknu.applyserver.application.data.repository
 
 import com.likelionknu.applyserver.application.data.entity.Application
+import com.likelionknu.applyserver.auth.data.enums.ApplicationEvaluation
 import com.likelionknu.applyserver.auth.data.enums.ApplicationStatus
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
@@ -9,6 +10,26 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface ApplicationRepository : JpaRepository<Application, Long> {
+
+    fun countByRecruitId(
+        recruitId: Long
+    ): Long
+
+    fun countByRecruitIdAndStatus(
+        recruitId: Long,
+        status: ApplicationStatus
+    ): Long
+
+    fun countByRecruitIdAndStatusAndEvaluation(
+        recruitId: Long,
+        status: ApplicationStatus,
+        evaluation: ApplicationEvaluation
+    ): Long
+
+    fun countByRecruitIdAndStatusAndEvaluationIsNull(
+        recruitId: Long,
+        status: ApplicationStatus
+    ): Long
 
     fun findByUserIdAndRecruitIdAndStatus(
         userId: Long,
