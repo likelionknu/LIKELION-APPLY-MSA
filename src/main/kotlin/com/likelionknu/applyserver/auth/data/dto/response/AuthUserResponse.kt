@@ -15,12 +15,13 @@ data class AuthUserResponse(
     val lastAccessAt: LocalDateTime?,
     val createdAt: LocalDateTime?,
     val updatedAt: LocalDateTime?,
+
     val studentId: String?,
     val depart: String?,
     val grade: Int?,
     val phone: String?,
     val academicStatus: String?,
+
     val currentPart: String?,
-    val currentCourse: Int?,
-    val joinedAt: LocalDateTime?
+    val currentGeneration: Int?
 )

@@ -23,10 +23,10 @@ data class ApplyUserProfileResponse(
     val status: String?,
 
     val part: String?,
-    val course: Int?,
+    val generation: Int?,
 
-    @JsonProperty("joined_at")
-    val joinedAt: LocalDateTime?
+    @JsonProperty("last_access_at")
+    val lastAccessAt: LocalDateTime?
 ) {
     companion object {
         fun from(authUserResponse: AuthUserResponse): ApplyUserProfileResponse {
@@ -41,8 +41,8 @@ data class ApplyUserProfileResponse(
                 studentId = authUserResponse.studentId,
                 status = authUserResponse.academicStatus,
                 part = authUserResponse.currentPart,
-                course = authUserResponse.currentCourse,
-                joinedAt = authUserResponse.joinedAt
+                generation = authUserResponse.currentGeneration,
+                lastAccessAt = authUserResponse.lastAccessAt
             )
         }
     }
