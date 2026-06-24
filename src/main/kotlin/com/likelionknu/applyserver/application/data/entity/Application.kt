@@ -77,43 +77,37 @@ class Application(
         note = memo
     }
 
-    fun updateDocumentEvaluation(evaluation: ApplicationEvaluation?) {
+    fun updateDocumentEvaluation(
+        evaluation: ApplicationEvaluation?
+    ) {
         documentEvaluation = evaluation
     }
 
-    fun updateInterviewEvaluation(evaluation: ApplicationEvaluation?) {
+    fun updateInterviewEvaluation(
+        evaluation: ApplicationEvaluation?
+    ) {
         interviewEvaluation = evaluation
     }
 
-    fun updateEvaluation(evaluation: ApplicationEvaluation?) {
+    fun updateEvaluation(
+        evaluation: ApplicationEvaluation?
+    ) {
         this.evaluation = evaluation
     }
 
     fun changeStatus(newStatus: ApplicationStatus?) {
-        if (newStatus == null) return
+        if (newStatus == null || status == newStatus) {
+            return
+        }
 
-        if (newStatus == ApplicationStatus.CANCELED &&
-            status != ApplicationStatus.CANCELED
-        ) {
+        if (newStatus == ApplicationStatus.CANCELED) {
             beforeCanceledStatus = status
             status = ApplicationStatus.CANCELED
-            resetEvaluation()
             return
         }
 
-        if (status == ApplicationStatus.CANCELED &&
-            newStatus != ApplicationStatus.CANCELED
-        ) {
-            status = newStatus
-            beforeCanceledStatus = null
-            resetEvaluation()
-            return
-        }
-
-        if (status != newStatus) {
-            status = newStatus
-            resetEvaluation()
-        }
+        status = newStatus
+        beforeCanceledStatus = null
     }
 
     fun restoreFromCanceled() {
@@ -126,10 +120,5 @@ class Application(
         }
 
         beforeCanceledStatus = null
-        resetEvaluation()
-    }
-
-    private fun resetEvaluation() {
-        evaluation = null
     }
 }
