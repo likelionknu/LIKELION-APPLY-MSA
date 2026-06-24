@@ -10,5 +10,5 @@ RUN addgroup -S app && adduser -S app -G app -u 1000
 WORKDIR /app
 COPY --from=builder --chown=1000:1000 /workspace/build/libs/*.jar app.jar
 USER 1000:1000
-EXPOSE 8082
+EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
