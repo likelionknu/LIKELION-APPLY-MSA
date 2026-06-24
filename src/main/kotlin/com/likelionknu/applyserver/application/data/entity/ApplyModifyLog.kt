@@ -36,7 +36,16 @@ class ApplyModifyLog(
     val id: Long? = null,
 
     @Column(nullable = false)
-    val content: String,
+    val field: String,
+
+    @Column(name = "field_label", nullable = false)
+    val fieldLabel: String,
+
+    @Column(name = "before_value")
+    val beforeValue: String? = null,
+
+    @Column(name = "after_value")
+    val afterValue: String? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recruit_id", nullable = false)

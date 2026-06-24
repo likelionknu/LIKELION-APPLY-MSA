@@ -1,10 +1,12 @@
 package com.likelionknu.applyserver.admin.controller
 
 import com.likelionknu.applyserver.admin.data.dto.request.AdminRecruitCreateRequest
+import com.likelionknu.applyserver.admin.data.dto.response.AdminModifyLogResponse
 import com.likelionknu.applyserver.admin.data.dto.response.AdminRecruitDetailResponse
 import com.likelionknu.applyserver.admin.data.dto.response.AdminRecruitListResponse
 import com.likelionknu.applyserver.admin.service.AdminRecruitService
 import com.likelionknu.applyserver.common.response.GlobalResponse
+import com.likelionknu.applyserver.common.security.SecurityUtil
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -24,8 +26,11 @@ class AdminRecruitController(
 
     @GetMapping
     @Operation(summary = "관리자 전체 공고 조회")
-    fun getRecruits(): GlobalResponse<List<AdminRecruitListResponse>> {
-        return GlobalResponse.ok(adminRecruitService.getRecruits())
+    fun getRecruits():
+            GlobalResponse<List<AdminRecruitListResponse>> {
+        return GlobalResponse.ok(
+            adminRecruitService.getRecruits()
+        )
     }
 
     @GetMapping("/{recruitId}")
@@ -35,6 +40,16 @@ class AdminRecruitController(
     ): GlobalResponse<AdminRecruitDetailResponse> {
         return GlobalResponse.ok(
             adminRecruitService.getRecruit(recruitId)
+        )
+    }
+
+    @GetMapping("/{recruitId}/log")
+    @Operation(summary = "관리자 특정 공고 변경 이력 조회")
+    fun getModifyLogs(
+        @PathVariable recruitId: Long
+    ): GlobalResponse<List<AdminModifyLogResponse>> {
+        return GlobalResponse.ok(
+            adminRecruitService.getModifyLogs(recruitId)
         )
     }
 
@@ -54,7 +69,12 @@ class AdminRecruitController(
         @PathVariable recruitId: Long,
         @RequestBody @Valid request: AdminRecruitCreateRequest
     ): GlobalResponse<Void> {
-        adminRecruitService.updateRecruit(recruitId, request)
+        adminRecruitService.updateRecruit(
+            recruitId = recruitId,
+            adminEmail = SecurityUtil.getUsername(),
+            request = request
+        )
+
         return GlobalResponse.ok()
     }
 

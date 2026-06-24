@@ -13,7 +13,7 @@ class HeaderAuthenticationFilter : OncePerRequestFilter() {
     companion object {
         private const val USER_EMAIL_HEADER = "X-User-Email"
         private const val USER_ROLE_HEADER = "X-User-Role"
-        private const val DEFAULT_ROLE = "USER"
+        private const val DEFAULT_ROLE = "MEMBER"
         private const val ROLE_PREFIX = "ROLE_"
     }
 
@@ -24,8 +24,12 @@ class HeaderAuthenticationFilter : OncePerRequestFilter() {
     ) {
         val email = request.getHeader(USER_EMAIL_HEADER)
 
-        if (!email.isNullOrBlank() && SecurityContextHolder.getContext().authentication == null) {
+        if (
+            !email.isNullOrBlank() &&
+            SecurityContextHolder.getContext().authentication == null
+        ) {
             val role = request.getHeader(USER_ROLE_HEADER)
+                ?.trim()
                 ?.takeIf { it.isNotBlank() }
                 ?: DEFAULT_ROLE
 
@@ -35,13 +39,15 @@ class HeaderAuthenticationFilter : OncePerRequestFilter() {
                 ROLE_PREFIX + role
             }
 
-            val authentication = UsernamePasswordAuthenticationToken(
-                email,
-                null,
-                listOf(SimpleGrantedAuthority(authority))
-            )
+            val authentication =
+                UsernamePasswordAuthenticationToken(
+                    email,
+                    null,
+                    listOf(SimpleGrantedAuthority(authority))
+                )
 
-            SecurityContextHolder.getContext().authentication = authentication
+            SecurityContextHolder.getContext().authentication =
+                authentication
         }
 
         filterChain.doFilter(request, response)

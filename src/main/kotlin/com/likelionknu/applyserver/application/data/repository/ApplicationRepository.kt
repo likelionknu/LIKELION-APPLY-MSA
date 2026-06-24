@@ -95,4 +95,22 @@ interface ApplicationRepository : JpaRepository<Application, Long> {
     fun findAllWithUserAndAnswersByRecruitId(
         @Param("recruitId") recruitId: Long
     ): List<Application>
+
+    @Query(
+        """
+        select a
+        from Application a
+        join fetch a.user u
+        join fetch a.recruit r
+        where r.id = :recruitId
+          and a.status = :status
+          and a.evaluation = :evaluation
+        order by u.name asc
+        """
+    )
+    fun findFinalPassedApplications(
+        @Param("recruitId") recruitId: Long,
+        @Param("status") status: ApplicationStatus,
+        @Param("evaluation") evaluation: ApplicationEvaluation
+    ): List<Application>
 }

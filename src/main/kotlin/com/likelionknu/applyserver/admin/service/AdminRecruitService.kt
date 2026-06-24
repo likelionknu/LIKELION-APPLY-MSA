@@ -1,10 +1,13 @@
 package com.likelionknu.applyserver.admin.service
 
 import com.likelionknu.applyserver.admin.data.dto.request.AdminRecruitCreateRequest
+import com.likelionknu.applyserver.admin.data.dto.response.AdminModifyLogResponse
 import com.likelionknu.applyserver.admin.data.dto.response.AdminRecruitDetailResponse
 import com.likelionknu.applyserver.admin.data.dto.response.AdminRecruitListResponse
+import com.likelionknu.applyserver.application.data.entity.ApplyModifyLog
 import com.likelionknu.applyserver.application.data.exception.RecruitNotFoundException
 import com.likelionknu.applyserver.application.data.repository.ApplicationRepository
+import com.likelionknu.applyserver.application.data.repository.ApplyModifyLogRepository
 import com.likelionknu.applyserver.auth.data.enums.ApplicationEvaluation
 import com.likelionknu.applyserver.auth.data.enums.ApplicationStatus
 import com.likelionknu.applyserver.common.response.ErrorCode
@@ -13,6 +16,7 @@ import com.likelionknu.applyserver.recruit.data.entity.Recruit
 import com.likelionknu.applyserver.recruit.data.entity.RecruitContent
 import com.likelionknu.applyserver.recruit.data.repository.RecruitContentRepository
 import com.likelionknu.applyserver.recruit.data.repository.RecruitRepository
+import com.likelionknu.applyserver.user.service.ApplyUserSyncService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -20,7 +24,9 @@ import org.springframework.transaction.annotation.Transactional
 class AdminRecruitService(
     private val recruitRepository: RecruitRepository,
     private val recruitContentRepository: RecruitContentRepository,
-    private val applicationRepository: ApplicationRepository
+    private val applicationRepository: ApplicationRepository,
+    private val applyModifyLogRepository: ApplyModifyLogRepository,
+    private val applyUserSyncService: ApplyUserSyncService
 ) {
 
     @Transactional(readOnly = true)
@@ -32,45 +38,58 @@ class AdminRecruitService(
 
                 AdminRecruitListResponse.from(
                     recruit = recruit,
-                    questionCount = recruitContentRepository.countByRecruitId(recruitId),
-                    submit = applicationRepository.countByRecruitIdAndStatus(
-                        recruitId,
-                        ApplicationStatus.SUBMITTED
-                    ),
-                    draft = applicationRepository.countByRecruitIdAndStatus(
-                        recruitId,
-                        ApplicationStatus.DRAFT
-                    ),
-                    cancel = applicationRepository.countByRecruitIdAndStatus(
-                        recruitId,
-                        ApplicationStatus.CANCELED
-                    ),
-                    pass = applicationRepository.countByRecruitIdAndStatusAndEvaluation(
-                        recruitId,
-                        ApplicationStatus.SUBMITTED,
-                        ApplicationEvaluation.PASS
-                    ),
-                    fail = applicationRepository.countByRecruitIdAndStatusAndEvaluation(
-                        recruitId,
-                        ApplicationStatus.SUBMITTED,
-                        ApplicationEvaluation.FAIL
-                    ),
-                    hold = applicationRepository.countByRecruitIdAndStatusAndEvaluation(
-                        recruitId,
-                        ApplicationStatus.SUBMITTED,
-                        ApplicationEvaluation.HOLD
-                    ),
-                    notReviewed = applicationRepository
-                        .countByRecruitIdAndStatusAndEvaluationIsNull(
+                    questionCount =
+                        recruitContentRepository.countByRecruitId(recruitId),
+                    submit =
+                        applicationRepository.countByRecruitIdAndStatus(
                             recruitId,
                             ApplicationStatus.SUBMITTED
-                        )
+                        ),
+                    draft =
+                        applicationRepository.countByRecruitIdAndStatus(
+                            recruitId,
+                            ApplicationStatus.DRAFT
+                        ),
+                    cancel =
+                        applicationRepository.countByRecruitIdAndStatus(
+                            recruitId,
+                            ApplicationStatus.CANCELED
+                        ),
+                    pass =
+                        applicationRepository
+                            .countByRecruitIdAndStatusAndEvaluation(
+                                recruitId,
+                                ApplicationStatus.SUBMITTED,
+                                ApplicationEvaluation.PASS
+                            ),
+                    fail =
+                        applicationRepository
+                            .countByRecruitIdAndStatusAndEvaluation(
+                                recruitId,
+                                ApplicationStatus.SUBMITTED,
+                                ApplicationEvaluation.FAIL
+                            ),
+                    hold =
+                        applicationRepository
+                            .countByRecruitIdAndStatusAndEvaluation(
+                                recruitId,
+                                ApplicationStatus.SUBMITTED,
+                                ApplicationEvaluation.HOLD
+                            ),
+                    notReviewed =
+                        applicationRepository
+                            .countByRecruitIdAndStatusAndEvaluationIsNull(
+                                recruitId,
+                                ApplicationStatus.SUBMITTED
+                            )
                 )
             }
     }
 
     @Transactional(readOnly = true)
-    fun getRecruit(recruitId: Long): AdminRecruitDetailResponse {
+    fun getRecruit(
+        recruitId: Long
+    ): AdminRecruitDetailResponse {
         val recruit = findActiveRecruit(recruitId)
 
         val contents = recruitContentRepository
@@ -82,8 +101,21 @@ class AdminRecruitService(
         )
     }
 
+    @Transactional(readOnly = true)
+    fun getModifyLogs(
+        recruitId: Long
+    ): List<AdminModifyLogResponse> {
+        findActiveRecruit(recruitId)
+
+        return applyModifyLogRepository
+            .findAllByRecruitIdWithUserAndApplication(recruitId)
+            .map(AdminModifyLogResponse::from)
+    }
+
     @Transactional
-    fun createRecruit(request: AdminRecruitCreateRequest): Long {
+    fun createRecruit(
+        request: AdminRecruitCreateRequest
+    ): Long {
         validateRecruitRequest(request)
 
         val recruit = recruitRepository.save(
@@ -92,10 +124,10 @@ class AdminRecruitService(
                 generation = request.generation,
                 startAt = request.startAt ?: throw invalidRequest(),
                 endAt = request.endAt ?: throw invalidRequest(),
-                documentResultAt = request.documentResultAt
-                    ?: throw invalidRequest(),
-                finalResultAt = request.finalResultAt
-                    ?: throw invalidRequest()
+                documentResultAt =
+                    request.documentResultAt ?: throw invalidRequest(),
+                finalResultAt =
+                    request.finalResultAt ?: throw invalidRequest()
             )
         )
 
@@ -104,12 +136,15 @@ class AdminRecruitService(
         )
 
         return recruit.id
-            ?: throw IllegalStateException("모집 공고 ID가 생성되지 않았습니다.")
+            ?: throw IllegalStateException(
+                "모집 공고 ID가 생성되지 않았습니다."
+            )
     }
 
     @Transactional
     fun updateRecruit(
         recruitId: Long,
+        adminEmail: String,
         request: AdminRecruitCreateRequest
     ) {
         validateRecruitRequest(request)
@@ -120,15 +155,117 @@ class AdminRecruitService(
             throw GlobalException(ErrorCode.CONFLICT)
         }
 
+        val startAt = request.startAt ?: throw invalidRequest()
+        val endAt = request.endAt ?: throw invalidRequest()
+        val documentResultAt =
+            request.documentResultAt ?: throw invalidRequest()
+        val finalResultAt =
+            request.finalResultAt ?: throw invalidRequest()
+
+        val previousQuestions = recruitContentRepository
+            .findByRecruitIdOrderByPriorityAsc(recruitId)
+
+        val questionsChanged =
+            previousQuestions.map { questionFingerprint(it) } !=
+                    request.questions
+                        .sortedBy { it.priority }
+                        .map {
+                            listOf(
+                                it.question.trim(),
+                                it.priority.toString(),
+                                it.required.toString(),
+                                it.minLength.toString(),
+                                it.maxLength.toString()
+                            )
+                        }
+
+        val hasChanges =
+            recruit.title != request.title.trim() ||
+                    recruit.generation != request.generation ||
+                    recruit.startAt != startAt ||
+                    recruit.endAt != endAt ||
+                    recruit.documentResultAt != documentResultAt ||
+                    recruit.finalResultAt != finalResultAt ||
+                    questionsChanged
+
+        if (!hasChanges) {
+            return
+        }
+
+        val admin = applyUserSyncService.getOrSync(adminEmail)
+
+        saveModifyLog(
+            recruit = recruit,
+            admin = admin,
+            field = "title",
+            fieldLabel = "제목 수정",
+            before = recruit.title,
+            after = request.title.trim()
+        )
+
+        saveModifyLog(
+            recruit = recruit,
+            admin = admin,
+            field = "generation",
+            fieldLabel = "기수 수정",
+            before = recruit.generation.toString(),
+            after = request.generation.toString()
+        )
+
+        saveModifyLog(
+            recruit = recruit,
+            admin = admin,
+            field = "startAt",
+            fieldLabel = "모집 시작일 수정",
+            before = recruit.startAt.toString(),
+            after = startAt.toString()
+        )
+
+        saveModifyLog(
+            recruit = recruit,
+            admin = admin,
+            field = "endAt",
+            fieldLabel = "모집 종료일 수정",
+            before = recruit.endAt.toString(),
+            after = endAt.toString()
+        )
+
+        saveModifyLog(
+            recruit = recruit,
+            admin = admin,
+            field = "documentResultAt",
+            fieldLabel = "1차 결과 발표일 수정",
+            before = recruit.documentResultAt.toString(),
+            after = documentResultAt.toString()
+        )
+
+        saveModifyLog(
+            recruit = recruit,
+            admin = admin,
+            field = "finalResultAt",
+            fieldLabel = "최종 결과 발표일 수정",
+            before = recruit.finalResultAt.toString(),
+            after = finalResultAt.toString()
+        )
+
+        if (questionsChanged) {
+            saveModifyLog(
+                recruit = recruit,
+                admin = admin,
+                field = "questions",
+                fieldLabel = "지원서 질문 수정",
+                before = "${previousQuestions.size}개",
+                after = "${request.questions.size}개"
+            )
+        }
+
         recruit.update(
             title = request.title.trim(),
             generation = request.generation,
-            startAt = request.startAt ?: throw invalidRequest(),
-            endAt = request.endAt ?: throw invalidRequest(),
-            documentResultAt = request.documentResultAt
-                ?: throw invalidRequest(),
-            finalResultAt = request.finalResultAt
-                ?: throw invalidRequest()
+            startAt = startAt,
+            endAt = endAt,
+            documentResultAt = documentResultAt,
+            finalResultAt = finalResultAt
         )
 
         recruitContentRepository.deleteAllByRecruitId(recruitId)
@@ -149,6 +286,43 @@ class AdminRecruitService(
         recruit.softDelete()
     }
 
+    private fun saveModifyLog(
+        recruit: Recruit,
+        admin: com.likelionknu.applyserver.user.data.entity.ApplyUser,
+        field: String,
+        fieldLabel: String,
+        before: String?,
+        after: String?
+    ) {
+        if (before == after) {
+            return
+        }
+
+        applyModifyLogRepository.save(
+            ApplyModifyLog(
+                field = field,
+                fieldLabel = fieldLabel,
+                beforeValue = before,
+                afterValue = after,
+                recruit = recruit,
+                application = null,
+                user = admin
+            )
+        )
+    }
+
+    private fun questionFingerprint(
+        content: RecruitContent
+    ): List<String> {
+        return listOf(
+            content.question.trim(),
+            content.priority.toString(),
+            content.required.toString(),
+            content.minLength.toString(),
+            content.maxLength.toString()
+        )
+    }
+
     private fun createRecruitContents(
         recruit: Recruit,
         request: AdminRecruitCreateRequest
@@ -167,7 +341,9 @@ class AdminRecruitService(
             }
     }
 
-    private fun findActiveRecruit(recruitId: Long): Recruit {
+    private fun findActiveRecruit(
+        recruitId: Long
+    ): Recruit {
         val recruit = recruitRepository.findById(recruitId)
             .orElseThrow { RecruitNotFoundException() }
 
@@ -183,10 +359,10 @@ class AdminRecruitService(
     ) {
         val startAt = request.startAt ?: throw invalidRequest()
         val endAt = request.endAt ?: throw invalidRequest()
-        val documentResultAt = request.documentResultAt
-            ?: throw invalidRequest()
-        val finalResultAt = request.finalResultAt
-            ?: throw invalidRequest()
+        val documentResultAt =
+            request.documentResultAt ?: throw invalidRequest()
+        val finalResultAt =
+            request.finalResultAt ?: throw invalidRequest()
 
         if (!startAt.isBefore(endAt)) {
             throw invalidRequest()
@@ -201,15 +377,18 @@ class AdminRecruitService(
         }
 
         val priorities = request.questions.map { it.priority }
-        val expectedPriorities = (1..request.questions.size).toList()
+        val expectedPriorities =
+            (1..request.questions.size).toList()
 
         if (priorities.sorted() != expectedPriorities) {
             throw invalidRequest()
         }
 
         request.questions.forEach { question ->
-            val minLength = question.minLength ?: throw invalidRequest()
-            val maxLength = question.maxLength ?: throw invalidRequest()
+            val minLength =
+                question.minLength ?: throw invalidRequest()
+            val maxLength =
+                question.maxLength ?: throw invalidRequest()
 
             if (minLength > maxLength) {
                 throw invalidRequest()
