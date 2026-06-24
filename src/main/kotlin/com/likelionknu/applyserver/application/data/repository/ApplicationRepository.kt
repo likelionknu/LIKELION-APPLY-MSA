@@ -11,9 +11,7 @@ import org.springframework.stereotype.Repository
 @Repository
 interface ApplicationRepository : JpaRepository<Application, Long> {
 
-    fun countByRecruitId(
-        recruitId: Long
-    ): Long
+    fun countByRecruitId(recruitId: Long): Long
 
     fun countByRecruitIdAndStatus(
         recruitId: Long,
@@ -72,7 +70,8 @@ interface ApplicationRepository : JpaRepository<Application, Long> {
 
     @Query(
         """
-        select a from Application a
+        select a
+        from Application a
         join fetch a.recruit r
         where a.user.id = :userId
         order by a.submittedAt desc
@@ -80,5 +79,20 @@ interface ApplicationRepository : JpaRepository<Application, Long> {
     )
     fun findAllWithRecruitByUserId(
         @Param("userId") userId: Long
+    ): List<Application>
+
+    @Query(
+        """
+        select distinct a
+        from Application a
+        join fetch a.user u
+        left join fetch a.answers answer
+        left join fetch answer.content content
+        where a.recruit.id = :recruitId
+        order by a.submittedAt desc
+        """
+    )
+    fun findAllWithUserAndAnswersByRecruitId(
+        @Param("recruitId") recruitId: Long
     ): List<Application>
 }

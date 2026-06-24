@@ -11,6 +11,8 @@ import com.likelionknu.applyserver.application.data.exception.UserNotFoundExcept
 import com.likelionknu.applyserver.application.data.repository.ApplicationRepository
 import com.likelionknu.applyserver.application.data.repository.RecruitAnswerRepository
 import com.likelionknu.applyserver.auth.data.enums.ApplicationStatus
+import com.likelionknu.applyserver.common.response.ErrorCode
+import com.likelionknu.applyserver.common.response.GlobalException
 import com.likelionknu.applyserver.discord.service.DiscordNotificationService
 import com.likelionknu.applyserver.recruit.data.repository.RecruitContentRepository
 import com.likelionknu.applyserver.recruit.data.repository.RecruitRepository
@@ -39,51 +41,59 @@ class ApplicationFinalSubmitService(
         val applyUserId = applyUser.id
             ?: throw UserNotFoundException()
 
-        val profileCompleted =
-            applyUser.studentId != null &&
-                    applyUser.depart != null &&
-                    applyUser.phone != null &&
-                    applyUser.grade != null &&
-                    applyUser.status != null
-
-        if (!profileCompleted) {
-            throw ProfileIncompleteException()
-        }
+        validateProfileCompleted(applyUser)
 
         val recruit = recruitRepository.findById(request.recruitId)
             .orElseThrow { RecruitNotFoundException() }
+
+        if (recruit.deletedAt != null) {
+            throw RecruitNotFoundException()
+        }
 
         val recruitId = recruit.id
             ?: throw RecruitNotFoundException()
 
         val now = LocalDateTime.now()
-        val isOpen = !now.isBefore(recruit.startAt) && !now.isAfter(recruit.endAt)
+        val isOpen = !now.isBefore(recruit.startAt) &&
+                !now.isAfter(recruit.endAt)
 
         if (!isOpen) {
             throw RecruitIsNotOpenedException()
         }
 
-        applicationAnswerValidator.validateFinalSubmit(recruitId, request.items)
+        val preferredPart = request.preferredPart
+            ?: throw GlobalException(ErrorCode.INVALID_REQUEST)
 
-        val existingApplication = applicationRepository.findByUserIdAndRecruitId(
-            applyUserId,
-            request.recruitId
+        applicationAnswerValidator.validateFinalSubmit(
+            recruitId,
+            request.items
         )
 
-        if (existingApplication != null && existingApplication.status != ApplicationStatus.DRAFT) {
-            throw IllegalStateException(
-                "이미 제출되었거나 처리 중인 지원서는 최종 제출을 다시 할 수 없습니다. 회수 취소(restore)만 가능합니다."
+        val existingApplication =
+            applicationRepository.findByUserIdAndRecruitId(
+                applyUserId,
+                request.recruitId
             )
+
+        if (
+            existingApplication != null &&
+            existingApplication.status != ApplicationStatus.DRAFT
+        ) {
+            throw GlobalException(ErrorCode.CONFLICT)
         }
 
-        val application = existingApplication ?: applicationRepository.save(
-            Application(
-                recruit = recruit,
-                user = applyUser,
-                status = ApplicationStatus.DRAFT,
-                submittedAt = now
+        val application = existingApplication
+            ?: applicationRepository.save(
+                Application(
+                    recruit = recruit,
+                    user = applyUser,
+                    preferredPart = preferredPart,
+                    status = ApplicationStatus.DRAFT,
+                    submittedAt = now
+                )
             )
-        )
+
+        application.updatePreferredPart(preferredPart)
 
         val applicationId = application.id
             ?: throw IllegalStateException("지원서 ID가 없습니다.")
@@ -111,5 +121,20 @@ class ApplicationFinalSubmitService(
             application.user.email,
             application.recruit.title
         )
+    }
+
+    private fun validateProfileCompleted(
+        applyUser: com.likelionknu.applyserver.user.data.entity.ApplyUser
+    ) {
+        val profileCompleted =
+            applyUser.studentId != null &&
+                    applyUser.depart != null &&
+                    applyUser.phone != null &&
+                    applyUser.grade != null &&
+                    applyUser.status != null
+
+        if (!profileCompleted) {
+            throw ProfileIncompleteException()
+        }
     }
 }

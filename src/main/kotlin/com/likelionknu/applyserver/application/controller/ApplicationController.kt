@@ -30,27 +30,33 @@ class ApplicationController(
     private val applicationCancelService: ApplicationCancelService,
     private val applyUserSyncService: ApplyUserSyncService
 ) {
+
     @PostMapping
     @Operation(summary = "지원서 최종 제출")
     fun finalSubmit(
         @RequestBody request: @Valid FinalSubmitRequestDto
     ): GlobalResponse<Void> {
-        applicationFinalSubmitService.finalSubmit(SecurityUtil.getUsername(), request)
+        applicationFinalSubmitService.finalSubmit(
+            SecurityUtil.getUsername(),
+            request
+        )
         return GlobalResponse.ok()
     }
 
     @PutMapping("/drafts/{recruitId}")
     @Operation(summary = "지원서 임시 저장 (DRAFT 상태에서만 가능)")
     fun saveDraft(
-        @PathVariable("recruitId") recruitId: Long,
-        @RequestBody requests: List<ApplicationDraftSaveRequest>
+        @PathVariable recruitId: Long,
+        @RequestBody @Valid request: ApplicationDraftSaveRequest
     ): GlobalResponse<Long> {
-        val applyUser = applyUserSyncService.getOrSync(SecurityUtil.getUsername())
+        val applyUser = applyUserSyncService.getOrSync(
+            SecurityUtil.getUsername()
+        )
 
         val applicationId = applicationService.saveDraft(
-            applyUser.id!!,
-            recruitId,
-            requests
+            userId = applyUser.id!!,
+            recruitId = recruitId,
+            request = request
         )
 
         return GlobalResponse.ok(applicationId)
@@ -60,7 +66,9 @@ class ApplicationController(
     @Operation(summary = "내 지원서 목록 조회")
     fun getMyApplications(): GlobalResponse<List<ApplicationSummaryResponse>> {
         return GlobalResponse.ok(
-            applicationQueryService.getMyApplications(SecurityUtil.getUsername())
+            applicationQueryService.getMyApplications(
+                SecurityUtil.getUsername()
+            )
         )
     }
 
@@ -70,7 +78,10 @@ class ApplicationController(
         @PathVariable id: Long
     ): GlobalResponse<ApplicationDetailResponse> {
         return GlobalResponse.ok(
-            applicationQueryService.getApplicationDetail(SecurityUtil.getUsername(), id)
+            applicationQueryService.getApplicationDetail(
+                SecurityUtil.getUsername(),
+                id
+            )
         )
     }
 
@@ -79,9 +90,14 @@ class ApplicationController(
     fun cancelApplication(
         @PathVariable recruitId: Long
     ): GlobalResponse<Void> {
-        val applyUser = applyUserSyncService.getOrSync(SecurityUtil.getUsername())
+        val applyUser = applyUserSyncService.getOrSync(
+            SecurityUtil.getUsername()
+        )
 
-        applicationCancelService.cancel(applyUser.id!!, recruitId)
+        applicationCancelService.cancel(
+            applyUser.id!!,
+            recruitId
+        )
 
         return GlobalResponse.ok()
     }
@@ -91,9 +107,14 @@ class ApplicationController(
     fun restoreApplication(
         @PathVariable recruitId: Long
     ): GlobalResponse<Void> {
-        val applyUser = applyUserSyncService.getOrSync(SecurityUtil.getUsername())
+        val applyUser = applyUserSyncService.getOrSync(
+            SecurityUtil.getUsername()
+        )
 
-        applicationCancelService.restore(applyUser.id!!, recruitId)
+        applicationCancelService.restore(
+            applyUser.id!!,
+            recruitId
+        )
 
         return GlobalResponse.ok()
     }

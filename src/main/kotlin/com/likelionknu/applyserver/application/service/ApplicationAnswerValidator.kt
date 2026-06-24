@@ -21,13 +21,17 @@ class ApplicationAnswerValidator(
 
     fun validateDraft(
         recruitId: Long,
-        requests: List<ApplicationDraftSaveRequest>
+        items: List<ApplicationDraftSaveRequest.Item>
     ) {
-        requests.forEach { request ->
-            val questionId = request.questionId ?: return@forEach
-            val answer = request.answer?.trim()?.takeIf { it.isNotBlank() } ?: return@forEach
+        items.forEach { item ->
+            val questionId = item.questionId ?: return@forEach
+            val answer = item.answer
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?: return@forEach
 
             val content = getContent(questionId)
+
             validateQuestionBelongsToRecruit(content, recruitId)
             validateAnswerLength(content, answer)
         }
@@ -41,10 +45,14 @@ class ApplicationAnswerValidator(
             throw EmptyAnswerException()
         }
 
-        val contents = recruitContentRepository.findByRecruitIdOrderByPriorityAsc(recruitId)
+        val contents = recruitContentRepository
+            .findByRecruitIdOrderByPriorityAsc(recruitId)
+
         val contentMap = contents.associateBy { it.id }
 
-        val answerMap = items.associate { it.questionId to it.answer.trim() }
+        val answerMap = items.associate {
+            it.questionId to it.answer.trim()
+        }
 
         contents
             .filter { it.required }

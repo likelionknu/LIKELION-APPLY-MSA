@@ -12,8 +12,8 @@ import com.likelionknu.applyserver.common.response.GlobalException
 import com.likelionknu.applyserver.discord.service.DiscordNotificationService
 import com.likelionknu.applyserver.recruit.data.repository.RecruitRepository
 import com.likelionknu.applyserver.user.data.repository.ApplyUserRepository
-import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
@@ -29,19 +29,30 @@ class ApplicationService(
     fun saveDraft(
         userId: Long,
         recruitId: Long,
-        requests: List<ApplicationDraftSaveRequest>
+        request: ApplicationDraftSaveRequest
     ): Long {
         val recruit = recruitRepository.findById(recruitId)
             .orElseThrow { ApplicationNotFoundException() }
 
+        if (recruit.deletedAt != null) {
+            throw ApplicationNotFoundException()
+        }
+
         val now = LocalDateTime.now()
-        val isOpen = !now.isBefore(recruit.startAt) && !now.isAfter(recruit.endAt)
+        val isOpen = !now.isBefore(recruit.startAt) &&
+                !now.isAfter(recruit.endAt)
 
         if (!isOpen) {
             throw GlobalException(ErrorCode.FORBIDDEN)
         }
 
-        applicationAnswerValidator.validateDraft(recruitId, requests)
+        val preferredPart = request.preferredPart
+            ?: throw GlobalException(ErrorCode.INVALID_REQUEST)
+
+        applicationAnswerValidator.validateDraft(
+            recruitId,
+            request.items
+        )
 
         val application = applicationRepository
             .findByUserIdAndRecruitId(userId, recruitId)
@@ -50,6 +61,7 @@ class ApplicationService(
                     user = applyUserRepository.findById(userId)
                         .orElseThrow { UserNotFoundException() },
                     recruit = recruit,
+                    preferredPart = preferredPart,
                     status = ApplicationStatus.DRAFT,
                     submittedAt = now
                 )
@@ -59,7 +71,13 @@ class ApplicationService(
             throw ApplicationStateException()
         }
 
-        applicationAnswerService.replaceAnswers(application, requests)
+        application.updatePreferredPart(preferredPart)
+
+        applicationAnswerService.replaceAnswers(
+            application,
+            request.items
+        )
+
         application.submittedAt = LocalDateTime.now()
 
         discordNotificationService.sendUserDraftApplication(

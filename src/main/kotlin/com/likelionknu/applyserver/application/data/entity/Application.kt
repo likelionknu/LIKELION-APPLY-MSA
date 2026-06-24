@@ -1,23 +1,11 @@
 package com.likelionknu.applyserver.application.data.entity
 
+import com.likelionknu.applyserver.application.data.enums.ApplicantPart
 import com.likelionknu.applyserver.auth.data.enums.ApplicationEvaluation
 import com.likelionknu.applyserver.auth.data.enums.ApplicationStatus
 import com.likelionknu.applyserver.recruit.data.entity.Recruit
 import com.likelionknu.applyserver.user.data.entity.ApplyUser
-import jakarta.persistence.CascadeType
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
-import jakarta.persistence.Enumerated
-import jakarta.persistence.FetchType
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
-import jakarta.persistence.Id
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
-import jakarta.persistence.OneToMany
-import jakarta.persistence.Table
-import jakarta.persistence.UniqueConstraint
+import jakarta.persistence.*
 import java.time.LocalDateTime
 
 @Entity
@@ -43,6 +31,10 @@ class Application(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     val user: ApplyUser,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "preferred_part", nullable = false)
+    var preferredPart: ApplicantPart,
 
     @OneToMany(
         mappedBy = "application",
@@ -77,16 +69,20 @@ class Application(
     @Column(name = "submitted_at", nullable = false)
     var submittedAt: LocalDateTime
 ) {
+    fun updatePreferredPart(preferredPart: ApplicantPart) {
+        this.preferredPart = preferredPart
+    }
+
     fun updateNote(memo: String?) {
-        this.note = memo
+        note = memo
     }
 
     fun updateDocumentEvaluation(evaluation: ApplicationEvaluation?) {
-        this.documentEvaluation = evaluation
+        documentEvaluation = evaluation
     }
 
     fun updateInterviewEvaluation(evaluation: ApplicationEvaluation?) {
-        this.interviewEvaluation = evaluation
+        interviewEvaluation = evaluation
     }
 
     fun updateEvaluation(evaluation: ApplicationEvaluation?) {
@@ -96,37 +92,44 @@ class Application(
     fun changeStatus(newStatus: ApplicationStatus?) {
         if (newStatus == null) return
 
-        if (newStatus == ApplicationStatus.CANCELED && this.status != ApplicationStatus.CANCELED) {
-            this.beforeCanceledStatus = this.status
-            this.status = ApplicationStatus.CANCELED
+        if (newStatus == ApplicationStatus.CANCELED &&
+            status != ApplicationStatus.CANCELED
+        ) {
+            beforeCanceledStatus = status
+            status = ApplicationStatus.CANCELED
             resetEvaluation()
             return
         }
 
-        if (this.status == ApplicationStatus.CANCELED && newStatus != ApplicationStatus.CANCELED) {
-            this.status = newStatus
-            this.beforeCanceledStatus = null
+        if (status == ApplicationStatus.CANCELED &&
+            newStatus != ApplicationStatus.CANCELED
+        ) {
+            status = newStatus
+            beforeCanceledStatus = null
             resetEvaluation()
             return
         }
 
-        if (this.status != newStatus) {
-            this.status = newStatus
+        if (status != newStatus) {
+            status = newStatus
             resetEvaluation()
         }
     }
 
     fun restoreFromCanceled() {
-        check(this.status == ApplicationStatus.CANCELED) { "CANCELED 상태가 아닙니다." }
+        check(status == ApplicationStatus.CANCELED) {
+            "CANCELED 상태가 아닙니다."
+        }
 
-        checkNotNull(this.beforeCanceledStatus) { "복구할 이전 상태 정보가 없습니다." }
+        status = checkNotNull(beforeCanceledStatus) {
+            "복구할 이전 상태 정보가 없습니다."
+        }
 
-        this.status = this.beforeCanceledStatus!!
-        this.beforeCanceledStatus = null
+        beforeCanceledStatus = null
         resetEvaluation()
     }
 
     private fun resetEvaluation() {
-        this.evaluation = null
+        evaluation = null
     }
 }

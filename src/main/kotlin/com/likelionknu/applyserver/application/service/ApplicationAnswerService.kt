@@ -14,17 +14,25 @@ class ApplicationAnswerService(
     private val recruitContentRepository: RecruitContentRepository
 ) {
     @Transactional
-    fun replaceAnswers(application: Application, requests: List<ApplicationDraftSaveRequest>?) {
+    fun replaceAnswers(
+        application: Application,
+        items: List<ApplicationDraftSaveRequest.Item>
+    ) {
         recruitAnswerRepository.deleteByApplication_Id(application.id!!)
 
-        requests ?: return
-
-        for (req in requests) {
-            val questionId = req.questionId ?: continue
-            val answer = req.answer?.takeIf { it.isNotBlank() } ?: continue
+        items.forEach { item ->
+            val questionId = item.questionId ?: return@forEach
+            val answer = item.answer
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?: return@forEach
 
             val content = recruitContentRepository.findById(questionId)
-                .orElseThrow { IllegalArgumentException("질문을 찾을 수 없습니다. questionId=$questionId") }
+                .orElseThrow {
+                    IllegalArgumentException(
+                        "질문을 찾을 수 없습니다. questionId=$questionId"
+                    )
+                }
 
             recruitAnswerRepository.save(
                 RecruitAnswer(

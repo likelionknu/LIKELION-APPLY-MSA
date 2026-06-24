@@ -1,5 +1,6 @@
 package com.likelionknu.applyserver.application.data.dto.request
 
+import com.likelionknu.applyserver.application.data.enums.ApplicantPart
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
@@ -7,7 +8,10 @@ import jakarta.validation.constraints.NotNull
 
 data class FinalSubmitRequestDto(
     @field:NotNull
-    var recruitId: Long,
+    val recruitId: Long,
+
+    @field:NotNull
+    val preferredPart: ApplicantPart?,
 
     @field:NotEmpty
     @field:Valid
@@ -15,7 +19,7 @@ data class FinalSubmitRequestDto(
 ) {
     data class Item(
         @field:NotNull
-        var questionId: Long,
+        val questionId: Long,
 
         @field:NotBlank
         val answer: String
