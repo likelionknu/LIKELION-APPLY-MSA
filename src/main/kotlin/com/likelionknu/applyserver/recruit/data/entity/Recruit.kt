@@ -62,4 +62,8 @@ class Recruit(
         this.documentResultAt = documentResultAt
         this.finalResultAt = finalResultAt
     }
+
+    fun softDelete() {
+        deletedAt = LocalDateTime.now()
+    }
 }
