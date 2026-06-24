@@ -24,16 +24,22 @@ class SecurityConfiguration(
 ) {
 
     @Bean
-    fun filterChain(httpSecurity: HttpSecurity): SecurityFilterChain {
+    fun filterChain(
+        httpSecurity: HttpSecurity
+    ): SecurityFilterChain {
         httpSecurity
             .httpBasic { it.disable() }
             .csrf { it.disable() }
             .formLogin { it.disable() }
             .logout { it.disable() }
-            .cors { cors -> cors.configurationSource(corsConfigurationSource()) }
+            .cors {
+                it.configurationSource(corsConfigurationSource())
+            }
 
         httpSecurity.sessionManagement { session ->
-            session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            session.sessionCreationPolicy(
+                SessionCreationPolicy.STATELESS
+            )
         }
 
         httpSecurity.exceptionHandling { exceptionHandling ->
@@ -46,12 +52,20 @@ class SecurityConfiguration(
             authorize
                 .requestMatchers(
                     "/swagger-ui/**",
+                    "/swagger-ui.html",
                     "/v3/api-docs/**",
                     "/swagger-resources/**",
-                    "/webjars/**"
+                    "/webjars/**",
+                    "/actuator/**",
+                    "/error"
                 ).permitAll()
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                .requestMatchers(
+                    HttpMethod.OPTIONS,
+                    "/**"
+                ).permitAll()
+                .requestMatchers(
+                    "/api/v1/admin/**"
+                ).hasRole("ADMIN")
                 .anyRequest().authenticated()
         }
 
@@ -74,6 +88,7 @@ class SecurityConfiguration(
             "https://apply-page-client.vercel.app",
             "https://apply-page-admin.vercel.app"
         )
+
         configuration.allowedMethods = listOf(
             "GET",
             "POST",
@@ -82,6 +97,7 @@ class SecurityConfiguration(
             "OPTIONS",
             "PATCH"
         )
+
         configuration.allowedHeaders = listOf("*")
         configuration.allowCredentials = true
         configuration.maxAge = 3600L
@@ -93,5 +109,7 @@ class SecurityConfiguration(
     }
 
     @Bean
-    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
+    fun passwordEncoder(): PasswordEncoder {
+        return BCryptPasswordEncoder()
+    }
 }
