@@ -104,13 +104,6 @@ class RecruitService(
 
         validateRecruitNotDeleted(recruit)
 
-        val now = LocalDateTime.now()
-        val isOpen = !now.isBefore(recruit.startAt) && !now.isAfter(recruit.endAt)
-
-        if (!isOpen) {
-            throw GlobalException(ErrorCode.FORBIDDEN)
-        }
-
         val contents: List<RecruitContent> =
             recruitContentRepository.findByRecruitIdOrderByPriorityAsc(recruitId)
 
